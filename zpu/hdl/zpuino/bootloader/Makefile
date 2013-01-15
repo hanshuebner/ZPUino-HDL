@@ -23,25 +23,27 @@ LDFLAGS= -O2 -Wl,-T -Wl,zpuelf.lds -Wl,--relax -Wl,--gc-sections
 CXXFLAGS=$(CFLAGS) -fno-exceptions
 ASFLAGS=-D__ZPUINO_$(BOARD)__ $(DEFINES) -DASSEMBLY -I../common
 
-all: prom-generic-dp-32.vhd Makefile $(TARGET).S
+all: prom-generic-dp-32.vhd bootloader.vhd Makefile $(TARGET).S
 
 .PHONY: boot.cpp boot-c.c boot-s.S
 
 $(TARGET).elf: $(OBJ)
 	$(CXX) $+ -o $@ $(LDFLAGS)
 	$(OBJDUMP) -D $@ > $(TARGET).s
-	
+
 $(TARGET).bin: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
 
 $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex $< $@
-	
+
 $(TARGET).S: boot.cpp
 	$(CXX) $(CXXFLAGS) -S $+ -o $@
 
 prom-generic-dp-32.vhd: $(TARGET).bin
 	perl ../gen-prom-generic-dualport_32.pl $(TARGET).bin $(SIZE) > prom-generic-dp-32.vhd || rm -f prom-generic-dp-32.vhd	
+
+bootloader.vhd: $(TARGET).bin
 	perl ../gen-prom-generic-dualport-simple_32.pl $(TARGET).bin 4096 bootloader_dp_32 > bootloader.vhd || rm -f bootloader.vhd	
 
 clean:	
